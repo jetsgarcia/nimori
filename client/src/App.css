@@ -1,1 +1,10 @@
 @import "tailwindcss";
+
+@font-face {
+  font-family: Quicksand;
+  src: url("@/assets/fonts/Quicksand-Regular.ttf");
+}
+
+@theme {
+  --font-quicksand: "Quicksand", sans-serif;
+}
