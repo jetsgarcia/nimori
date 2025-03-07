@@ -15,7 +15,7 @@ export default function NavBar() {
 
   return (
     <div className="px-8">
-      <div className="border-primary-light flex items-center justify-between border-b py-2">
+      <div className="border-primary-light flex items-center justify-between border-b py-4">
         <div className="flex items-center gap-4">
           <Link to="/">
             <span className="font-quicksand text-primary-light dark:text-primary-dark text-4xl font-semibold">
