@@ -11,10 +11,12 @@
 
 @theme {
   --font-quicksand: "Quicksand", sans-serif;
+  --color-primary-light: #88bde7;
+  --color-primary-dark: #a7c7e7;
 }
 
 :root {
-  --background: oklch(1 0 0);
+  --background: #f7f9fc;
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -50,7 +52,7 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  --background: #1b1d23;
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.145 0 0);
   --card-foreground: oklch(0.985 0 0);
