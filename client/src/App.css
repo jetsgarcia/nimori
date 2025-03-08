@@ -13,6 +13,8 @@
   --font-quicksand: "Quicksand", sans-serif;
   --color-primary-light: #88bde7;
   --color-primary-dark: #a7c7e7;
+  --color-bg-light: #f7f9fc;
+  --color-bg-dark: #1b1d23;
 }
 
 :root {
