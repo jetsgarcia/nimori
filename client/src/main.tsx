@@ -28,7 +28,6 @@ createRoot(document.getElementById("root")!).render(
           <ApolloProvider client={client}>
             <Routes>
               <Route path="/" element={<LandingPage />} />
-              {/* Protected routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/*" element={<App />} />
               </Route>
