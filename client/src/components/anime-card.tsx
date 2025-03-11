@@ -16,10 +16,7 @@ export default function AnimeCard({
   isFavorite,
 }: AnimeCardProps) {
   return (
-    <div
-      key={anime.id}
-      className="hover:ring-primary-light dark:hover:ring-primary-dark flex h-full flex-col overflow-hidden rounded-lg bg-white shadow-lg transition duration-300 ease-in-out hover:shadow-xl hover:ring dark:bg-gray-900"
-    >
+    <div className="hover:ring-primary-light dark:hover:ring-primary-dark flex h-full flex-col overflow-hidden rounded-lg bg-white shadow-lg transition duration-300 ease-in-out hover:shadow-xl hover:ring dark:bg-gray-900">
       <img
         src={anime.coverImage.extraLarge}
         alt={anime.title.romaji}
