@@ -1,10 +1,9 @@
-import { User } from "lucide-react";
 import { Link, useLocation } from "react-router";
 import { ModeToggle } from "@/components/mode-toggle";
-import { Button } from "@/components/ui/button";
+import { SignedIn, UserButton } from "@clerk/clerk-react";
 
 const navLinks = [
-  { url: "/", label: "Home" },
+  { url: "/home", label: "Home" },
   { url: "/watchlist", label: "Watchlist" },
   { url: "/waifu", label: "Waifu" },
   { url: "/search", label: "Search" },
@@ -17,7 +16,7 @@ export default function NavBar() {
     <>
       {/* Mobile navbar */}
       <div className="border-primary-light dark:border-primary-dark bg-bg-light dark:bg-bg-dark fixed top-0 right-0 left-0 z-50 flex items-center justify-between border-b px-4 py-2 md:hidden">
-        <Link to="/">
+        <Link to="/home">
           <span className="font-quicksand text-primary-light dark:text-primary-dark text-3xl font-semibold">
             nimori
           </span>
@@ -25,9 +24,9 @@ export default function NavBar() {
 
         <div className="flex items-center gap-2">
           <ModeToggle />
-          <Button variant="ghost" className="cursor-pointer">
-            <User />
-          </Button>
+          <SignedIn>
+            <UserButton />
+          </SignedIn>
         </div>
       </div>
 
@@ -39,9 +38,13 @@ export default function NavBar() {
                 <Link
                   to={url}
                   className={`px-4 transition-colors duration-300 ${
-                    location.pathname === url
-                      ? ""
-                      : "text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                    url === "/"
+                      ? location.pathname === "/"
+                        ? "text-black dark:text-white"
+                        : "text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                      : location.pathname.startsWith(url)
+                        ? "text-black dark:text-white"
+                        : "text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
                   }`}
                 >
                   {label}
@@ -56,7 +59,7 @@ export default function NavBar() {
       <div className="bg-bg-light dark:bg-bg-dark fixed top-0 right-0 left-0 z-50 hidden px-8 md:block">
         <div className="border-primary-light flex items-center justify-between border-b py-4">
           <div className="flex items-center gap-4">
-            <Link to="/">
+            <Link to="/home">
               <span className="font-quicksand text-primary-light dark:text-primary-dark text-4xl font-semibold">
                 nimori
               </span>
@@ -68,9 +71,13 @@ export default function NavBar() {
                     <Link
                       to={url}
                       className={`px-4 transition-colors duration-300 ${
-                        location.pathname === url
-                          ? ""
-                          : "text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                        url === "/"
+                          ? location.pathname === "/"
+                            ? "text-black dark:text-white"
+                            : "text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                          : location.pathname.startsWith(url)
+                            ? "text-black dark:text-white"
+                            : "text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
                       }`}
                     >
                       {label}
@@ -83,9 +90,9 @@ export default function NavBar() {
 
           <div className="flex items-center gap-2">
             <ModeToggle />
-            <Button variant="ghost" className="cursor-pointer">
-              <User />
-            </Button>
+            <SignedIn>
+              <UserButton />
+            </SignedIn>
           </div>
         </div>
       </div>
