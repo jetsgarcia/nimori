@@ -111,37 +111,41 @@ export default function SearchPage() {
         </div>
       )}
 
-      {searchData?.Page.media?.length !== 0 && !searchLoading && (
-        <>
-          <div className="mb-4 flex items-center gap-2">
-            <p className="mr-2">Customize title:</p>
-            <Button
-              variant={titleType === "english" ? "default" : "secondary"}
-              className="cursor-pointer"
-              onClick={() => setTitleType("english")}
-            >
-              English
-            </Button>
-            <Button
-              variant={titleType === "romaji" ? "default" : "secondary"}
-              className="cursor-pointer"
-              onClick={() => setTitleType("romaji")}
-            >
-              Romaji
-            </Button>
-          </div>
-          <div className="grid gap-6 pb-10 md:grid-cols-3 md:pb-0 lg:grid-cols-5">
-            {animeList?.map((anime: Anime) => (
-              <AnimeCard
-                anime={anime}
-                titleType={titleType}
-                cardType="add"
-                isFavorite={false}
-              />
-            ))}
-          </div>
-        </>
-      )}
+      {searchData?.Page.media?.length !== 0 &&
+        !searchLoading &&
+        !popularLoading && (
+          <>
+            <div className="mb-4 flex items-center gap-2">
+              <p className="mr-2">Customize title:</p>
+              <Button
+                variant={titleType === "english" ? "default" : "secondary"}
+                className="cursor-pointer"
+                onClick={() => setTitleType("english")}
+              >
+                English
+              </Button>
+              <Button
+                variant={titleType === "romaji" ? "default" : "secondary"}
+                className="cursor-pointer"
+                onClick={() => setTitleType("romaji")}
+              >
+                Romaji
+              </Button>
+            </div>
+            <div className="grid gap-6 pb-10 md:grid-cols-3 md:pb-0 lg:grid-cols-5">
+              {animeList?.map((anime: Anime) => (
+                <div key={anime.id}>
+                  <AnimeCard
+                    anime={anime}
+                    titleType={titleType}
+                    cardType="add"
+                    isFavorite={false}
+                  />
+                </div>
+              ))}
+            </div>
+          </>
+        )}
     </div>
   );
 }
