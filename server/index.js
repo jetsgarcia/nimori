@@ -1,5 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
+import connectDB from "./config/db.js";
+import User from "./models/user.model.js";
 
 dotenv.config();
 
@@ -11,7 +13,21 @@ app.use(express.json());
 
 app.post("/api/clerk-webhook", async (req, res) => {
   const { id } = req.body.data;
-  res.json(id);
+
+  if (!id) {
+    return res.status(400).json({ error: "Missing 'id' in request body" });
+  }
+
+  const newUser = new User({ userId: id });
+
+  try {
+    await newUser.save();
+    res.status(201).json(newUser);
+  } catch (error) {
+    res.status(500).json({ error: error });
+  }
 });
 
-app.listen(port);
+app.listen(port, () => {
+  connectDB();
+});
