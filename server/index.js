@@ -11,6 +11,22 @@ const app = express();
 
 app.use(express.json());
 
+app.get("/users/:userId/watchlist", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findOne({ userId }, "watchlist");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ watchlist: user.watchlist });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
 app.post("/users/:userId/watchlist", async (req, res) => {
   const { userId } = req.params;
   const { animeId } = req.body.data;
