@@ -3,46 +3,82 @@ import { Button } from "@/components/ui/button";
 import { Bookmark, Heart } from "lucide-react";
 import { useUser } from "@clerk/clerk-react";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface AnimeCardProps {
   anime: Anime;
   titleType: "english" | "romaji";
-  cardType: "add" | "remove";
   isFavorite: boolean;
 }
 
 export default function AnimeCard({
   anime,
   titleType,
-  cardType,
   isFavorite,
 }: AnimeCardProps) {
   const [addedAnimeToWatchlist, setAddedAnimeToWatchlist] = useState<number>();
+  const [removedAnimeFromWatchlist, setRemovedAnimeFromWatchlist] =
+    useState<number>();
+  useState<number>();
+  const [watchlist, setWatchlist] = useState<number[]>([]);
   const { user } = useUser();
+
+  useEffect(() => {
+    if (!user) toast.error("Please sign in to add anime to your watchlist");
+
+    const fetchWatchlist = async () => {
+      const response = await fetch(
+        `http://localhost:3000/users/${user?.id}/watchlist`,
+      );
+      if (!response.ok) {
+        console.error("Failed to fetch watchlist");
+      }
+      const data = await response.json();
+      setWatchlist(data.watchlist);
+    };
+
+    fetchWatchlist();
+  }, [user, removedAnimeFromWatchlist]);
 
   async function handleWatchlist() {
     if (!user) return toast.error("User not found. Please sign in.");
-
     const url = `http://localhost:3000/users/${user.id}/watchlist`;
-    const method = cardType === "add" ? "POST" : "DELETE";
-    const errorMessage =
-      cardType === "add"
-        ? "Failed to add anime to watchlist."
-        : "Failed to remove anime from watchlist.";
 
-    try {
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: { animeId: anime.id } }),
-      });
+    if (watchlist.includes(anime.id) || addedAnimeToWatchlist === anime.id) {
+      // Removing anime from watchlist
+      const errorMessage = "Failed to remove anime to watchlist.";
 
-      if (!response.ok) return toast.error(errorMessage);
+      try {
+        const response = await fetch(url, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: { animeId: anime.id } }),
+        });
 
-      setAddedAnimeToWatchlist(cardType === "add" ? anime.id : undefined);
-    } catch {
-      toast.error(errorMessage);
+        if (!response.ok) return toast.error(errorMessage);
+
+        setAddedAnimeToWatchlist(undefined);
+        setRemovedAnimeFromWatchlist(anime.id);
+      } catch {
+        toast.error(errorMessage);
+      }
+    } else {
+      // Adding anime to watchlist
+      const errorMessage = "Failed to add anime to watchlist.";
+
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: { animeId: anime.id } }),
+        });
+
+        if (!response.ok) return toast.error(errorMessage);
+
+        setAddedAnimeToWatchlist(anime.id);
+      } catch {
+        toast.error(errorMessage);
+      }
     }
   }
 
@@ -56,7 +92,7 @@ export default function AnimeCard({
       />
 
       <div className="flex flex-grow flex-col justify-between p-4">
-        <h2 className="mb-2 line-clamp-3 text-lg">
+        <h2 className="mb-2 line-clamp-2 text-lg">
           {titleType === "english"
             ? anime.title.english || anime.title.romaji
             : anime.title.romaji}
@@ -99,7 +135,8 @@ export default function AnimeCard({
               className="flex-grow cursor-pointer"
               onClick={handleWatchlist}
             >
-              {cardType === "remove" || addedAnimeToWatchlist === anime.id ? (
+              {watchlist.includes(anime.id) ||
+              addedAnimeToWatchlist === anime.id ? (
                 <>
                   <Bookmark className="fill-bg-dark" />{" "}
                   <span>Remove from watchlist</span>
