@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLazyQuery, useQuery, gql } from "@apollo/client";
 import { Button } from "@/components/ui/button";
 import SearchInput from "./_components/search-input";
@@ -6,6 +6,8 @@ import { TriangleAlert } from "lucide-react";
 import Loading from "@/components/loading";
 import AnimeCard from "@/components/anime-card";
 import { Anime } from "@/types/anime";
+import { useUser } from "@clerk/clerk-react";
+import { toast } from "sonner";
 
 const GET_ANIME_LIST = gql`
   query ($search: String) {
@@ -57,6 +59,25 @@ const GET_POPULAR_ANIME = gql`
 export default function SearchPage() {
   const [titleType, setTitleType] = useState<"romaji" | "english">("english");
   const [searchTriggered, setSearchTriggered] = useState(false);
+  const [watchlist, setWatchlist] = useState<number[]>([]);
+  const { user } = useUser();
+
+  useEffect(() => {
+    if (!user) toast.error("Please sign in to add anime to your watchlist");
+
+    const fetchWatchlist = async () => {
+      const response = await fetch(
+        `http://localhost:3000/users/${user?.id}/watchlist`,
+      );
+      if (!response.ok) {
+        console.error("Failed to fetch watchlist");
+      }
+      const data = await response.json();
+      setWatchlist(data.watchlist);
+    };
+
+    fetchWatchlist();
+  }, [user]);
 
   const {
     data: popularData,
@@ -133,16 +154,23 @@ export default function SearchPage() {
               </Button>
             </div>
             <div className="grid gap-6 pb-10 md:grid-cols-3 md:pb-0 lg:grid-cols-5">
-              {animeList?.map((anime: Anime) => (
-                <div key={anime.id}>
-                  <AnimeCard
-                    anime={anime}
-                    titleType={titleType}
-                    cardType="add"
-                    isFavorite={false}
-                  />
-                </div>
-              ))}
+              {animeList?.map(
+                (anime: Anime) => (
+                  console.log(watchlist.includes(anime.id)),
+                  (
+                    <div key={anime.id}>
+                      <AnimeCard
+                        anime={anime}
+                        titleType={titleType}
+                        cardType={
+                          watchlist.includes(anime.id) ? "remove" : "add"
+                        }
+                        isFavorite={false}
+                      />
+                    </div>
+                  )
+                ),
+              )}
             </div>
           </>
         )}
