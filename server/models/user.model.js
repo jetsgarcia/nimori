@@ -7,15 +7,15 @@ const userSchema = new mongoose.Schema({
     unique: true,
   },
   watchlist: {
-    type: [String],
+    type: [Number],
     default: [],
   },
   favorites: {
-    type: [String],
+    type: [Number],
     default: [],
   },
   waifus: {
-    type: [String],
+    type: [Number],
     default: [],
   },
 });
