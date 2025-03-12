@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router";
 import NavBar from "@/components/navbar";
 import SearchPage from "@/pages/search/SearchPage";
+import { Toaster } from "@/components/ui/sonner";
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
           <Route path="search" element={<SearchPage />} />
         </Routes>
       </div>
+      <Toaster />
     </>
   );
 }
