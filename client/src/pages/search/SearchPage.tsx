@@ -154,23 +154,16 @@ export default function SearchPage() {
               </Button>
             </div>
             <div className="grid gap-6 pb-10 md:grid-cols-3 md:pb-0 lg:grid-cols-5">
-              {animeList?.map(
-                (anime: Anime) => (
-                  console.log(watchlist.includes(anime.id)),
-                  (
-                    <div key={anime.id}>
-                      <AnimeCard
-                        anime={anime}
-                        titleType={titleType}
-                        cardType={
-                          watchlist.includes(anime.id) ? "remove" : "add"
-                        }
-                        isFavorite={false}
-                      />
-                    </div>
-                  )
-                ),
-              )}
+              {animeList?.map((anime: Anime) => (
+                <div key={anime.id}>
+                  <AnimeCard
+                    anime={anime}
+                    titleType={titleType}
+                    cardType={watchlist.includes(anime.id) ? "remove" : "add"}
+                    isFavorite={false}
+                  />
+                </div>
+              ))}
             </div>
           </>
         )}
