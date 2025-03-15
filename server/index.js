@@ -136,6 +136,7 @@ app.post("/users/:userId/watched", requireAuth(), async (req, res) => {
   }
 });
 
+// Add userId from clerk to app database
 app.post("/api/clerk-webhook", async (req, res) => {
   const { id } = req.body.data;
 
