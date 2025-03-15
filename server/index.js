@@ -40,6 +40,7 @@ app.get("/users/:userId/watchlist", requireAuth(), async (req, res) => {
   }
 });
 
+// Add or move anime to watchlist
 app.post("/users/:userId/watchlist", requireAuth(), async (req, res) => {
   const { userId } = req.params;
   const { animeId } = req.body.data;
@@ -51,8 +52,11 @@ app.post("/users/:userId/watchlist", requireAuth(), async (req, res) => {
   try {
     const updatedUser = await User.findOneAndUpdate(
       { userId },
-      { $addToSet: { watchlist: animeId } },
-      { new: true, upsert: true }
+      {
+        $pull: { watching: animeId, watched: animeId },
+        $addToSet: { watchlist: animeId },
+      },
+      { new: true, upsert: false }
     );
 
     res.status(200).json(updatedUser);
