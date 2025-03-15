@@ -10,11 +10,11 @@ const userSchema = new mongoose.Schema({
     type: [Number],
     default: [],
   },
-  favorites: {
+  watching: {
     type: [Number],
     default: [],
   },
-  waifus: {
+  watched: {
     type: [Number],
     default: [],
   },
