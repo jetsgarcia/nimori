@@ -5,7 +5,6 @@ import { SignedIn, UserButton } from "@clerk/clerk-react";
 const navLinks = [
   { url: "/home", label: "Home" },
   { url: "/watchlist", label: "Watchlist" },
-  { url: "/waifu", label: "Waifu" },
   { url: "/search", label: "Search" },
 ];
 
