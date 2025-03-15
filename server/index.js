@@ -111,6 +111,31 @@ app.post("/users/:userId/watching", requireAuth(), async (req, res) => {
   }
 });
 
+// Move anime to watched
+app.post("/users/:userId/watched", requireAuth(), async (req, res) => {
+  const { userId } = req.params;
+  const { animeId } = req.body.data;
+
+  if (!animeId) {
+    return res.status(400).json({ error: "Missing 'animeId' in request body" });
+  }
+
+  try {
+    const updatedUser = await User.findOneAndUpdate(
+      { userId },
+      {
+        $pull: { watchlist: animeId, watching: animeId },
+        $addToSet: { watched: animeId },
+      },
+      { new: true, upsert: false }
+    );
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post("/api/clerk-webhook", async (req, res) => {
   const { id } = req.body.data;
 
