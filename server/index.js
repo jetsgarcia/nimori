@@ -1,17 +1,30 @@
 import express from "express";
 import dotenv from "dotenv";
+import "dotenv/config";
 import connectDB from "./config/db.js";
 import User from "./models/user.model.js";
+import cors from "cors";
+import { clerkMiddleware, requireAuth } from "@clerk/express";
 
 dotenv.config();
+
+const allowedOrigins = ["http://localhost:5173"];
 
 const port = process.env.PORT || 3000;
 
 const app = express();
 
+app.use(
+  cors({
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(clerkMiddleware());
 
-app.get("/users/:userId/watchlist", async (req, res) => {
+app.get("/users/:userId/watchlist", requireAuth(), async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -27,7 +40,7 @@ app.get("/users/:userId/watchlist", async (req, res) => {
   }
 });
 
-app.post("/users/:userId/watchlist", async (req, res) => {
+app.post("/users/:userId/watchlist", requireAuth(), async (req, res) => {
   const { userId } = req.params;
   const { animeId } = req.body.data;
 
@@ -40,6 +53,27 @@ app.post("/users/:userId/watchlist", async (req, res) => {
       { userId },
       { $addToSet: { watchlist: animeId } },
       { new: true, upsert: true }
+    );
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete("/users/:userId/watchlist", requireAuth(), async (req, res) => {
+  const { userId } = req.params;
+  const { animeId } = req.body.data;
+
+  if (!animeId) {
+    return res.status(400).json({ error: "Missing 'animeId' in request body" });
+  }
+
+  try {
+    const updatedUser = await User.findOneAndUpdate(
+      { userId },
+      { $pull: { watchlist: animeId } },
+      { new: true }
     );
 
     res.status(200).json(updatedUser);
