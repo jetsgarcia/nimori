@@ -24,7 +24,7 @@ app.use(
 app.use(express.json());
 app.use(clerkMiddleware());
 
-app.get("/users/:userId/watchlist", requireAuth(), async (req, res) => {
+app.get("/api/users/:userId/watchlist", requireAuth(), async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -41,7 +41,7 @@ app.get("/users/:userId/watchlist", requireAuth(), async (req, res) => {
 });
 
 // Add or move anime to watchlist
-app.post("/users/:userId/watchlist", requireAuth(), async (req, res) => {
+app.post("/api/users/:userId/watchlist", requireAuth(), async (req, res) => {
   const { userId } = req.params;
   const { animeId } = req.body.data;
 
@@ -65,7 +65,7 @@ app.post("/users/:userId/watchlist", requireAuth(), async (req, res) => {
   }
 });
 
-app.delete("/users/:userId/watchlist", requireAuth(), async (req, res) => {
+app.delete("/api/users/:userId/watchlist", requireAuth(), async (req, res) => {
   const { userId } = req.params;
   const { animeId } = req.body.data;
 
@@ -87,7 +87,7 @@ app.delete("/users/:userId/watchlist", requireAuth(), async (req, res) => {
 });
 
 // Move anime to watching
-app.post("/users/:userId/watching", requireAuth(), async (req, res) => {
+app.post("/api/users/:userId/watching", requireAuth(), async (req, res) => {
   const { userId } = req.params;
   const { animeId } = req.body.data;
 
@@ -112,7 +112,7 @@ app.post("/users/:userId/watching", requireAuth(), async (req, res) => {
 });
 
 // Move anime to watched
-app.post("/users/:userId/watched", requireAuth(), async (req, res) => {
+app.post("/api/users/:userId/watched", requireAuth(), async (req, res) => {
   const { userId } = req.params;
   const { animeId } = req.body.data;
 
