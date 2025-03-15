@@ -144,9 +144,8 @@ app.post("/api/clerk-webhook", async (req, res) => {
     return res.status(400).json({ error: "Missing 'id' in request body" });
   }
 
-  const newUser = new User({ userId: id });
-
   try {
+    const newUser = new User({ userId: id });
     await newUser.save();
     res.status(201).json(newUser);
   } catch (error) {
