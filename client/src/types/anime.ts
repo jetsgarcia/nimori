@@ -1,19 +1,26 @@
+import { Character } from "./character";
+
 export type Anime = {
-  id: number;
-  title: {
-    romaji: string;
-    english?: string;
-    native: string;
+  bannerImage: string;
+  characters: {
+    nodes: Character[];
   };
   coverImage: {
     extraLarge: string;
   };
-  description?: string;
-  episodes?: number;
-  format?: string;
-  genres?: string[];
-  startDate?: {
-    year?: number;
+  description: string;
+  episodes: number;
+  format: string;
+  genres: string[];
+  id: number;
+  startDate: {
+    day: number;
+    month: number;
+    year: number;
   };
-  status?: string;
+  status: string;
+  title: {
+    english?: string;
+    romaji: string;
+  };
 };
