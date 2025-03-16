@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import "dotenv/config";
 import connectDB from "./config/db.js";
 import User from "./models/user.model.js";
+import Anime from "./models/anime.model.js";
 import cors from "cors";
 import { clerkMiddleware, requireAuth } from "@clerk/express";
 
@@ -137,6 +138,22 @@ app.post("/api/users/:userId/watched", requireAuth(), async (req, res) => {
     res.status(200).json(updatedUser);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/anime", requireAuth(), async (req, res) => {
+  const anime = req.body.data;
+
+  if (!anime) {
+    return res.status(400).json({ error: "Missing 'anime' in request body" });
+  }
+
+  try {
+    const newAnime = new Anime(anime);
+    await newAnime.save();
+    res.status(201).json(newAnime);
+  } catch (error) {
+    res.status(500).json({ error: error });
   }
 });
 
