@@ -113,7 +113,8 @@ export default function SearchPage() {
 
       {searchData?.Page.media?.length !== 0 &&
         !searchLoading &&
-        !popularLoading && (
+        !popularLoading &&
+        !searchError && (
           <>
             <div className="mb-4 flex items-center gap-2">
               <p className="mr-2">Customize title:</p>
@@ -138,7 +139,7 @@ export default function SearchPage() {
                   <AnimeCard
                     anime={anime}
                     titleType={titleType}
-                    isFavorite={false}
+                    cardType="search"
                   />
                 </div>
               ))}
