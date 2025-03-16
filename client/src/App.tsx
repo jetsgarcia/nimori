@@ -3,8 +3,16 @@ import NavBar from "@/components/navbar";
 import SearchPage from "@/pages/search/SearchPage";
 import { Toaster } from "@/components/ui/sonner";
 import WatchlistPage from "@/pages/watchlist/WatchlistPage";
+import { useEffect } from "react";
+import { useLocation } from "react-router";
 
 function App() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
   return (
     <>
       <NavBar />
