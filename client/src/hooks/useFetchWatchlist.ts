@@ -30,7 +30,7 @@ export default function useFetchWatchlist() {
 
         const data = await response.json();
         setWatchlist(data.watchlist);
-        setWatchingList(data.watchinglist);
+        setWatchingList(data.watching);
         setWatchedList(data.watched);
       } catch (error) {
         console.error((error as Error).message);
