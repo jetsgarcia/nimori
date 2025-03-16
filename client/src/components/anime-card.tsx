@@ -1,64 +1,68 @@
 import { Anime } from "@/types/anime";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Heart } from "lucide-react";
-import { useUser } from "@clerk/clerk-react";
+import { Bookmark, Trash } from "lucide-react";
+import { useAuth, useUser } from "@clerk/clerk-react";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { cn } from "@/lib/utils";
+import useFetchWatchlist from "@/hooks/useFetchWatchlist";
+
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 interface AnimeCardProps {
   anime: Anime;
   titleType: "english" | "romaji";
-  isFavorite: boolean;
+  cardType: "search" | "watchlist";
+  setAnimeList?: React.Dispatch<React.SetStateAction<Anime[]>>;
 }
 
 export default function AnimeCard({
   anime,
   titleType,
-  isFavorite,
+  cardType,
+  setAnimeList,
 }: AnimeCardProps) {
   const [addedAnimeToWatchlist, setAddedAnimeToWatchlist] = useState<number>();
-  const [removedAnimeFromWatchlist, setRemovedAnimeFromWatchlist] =
+  const [removedAnimeToWatchlist, setRemovedAnimeToWatchlist] =
     useState<number>();
-  useState<number>();
-  const [watchlist, setWatchlist] = useState<number[]>([]);
+  const [watchStatus, setWatchStatus] = useState("toWatch");
+  const [watchlistFromDB] = useFetchWatchlist();
   const { user } = useUser();
-
-  useEffect(() => {
-    if (!user) toast.error("Please sign in to add anime to your watchlist");
-
-    const fetchWatchlist = async () => {
-      const response = await fetch(
-        `http://localhost:3000/users/${user?.id}/watchlist`,
-      );
-      if (!response.ok) {
-        console.error("Failed to fetch watchlist");
-      }
-      const data = await response.json();
-      setWatchlist(data.watchlist);
-    };
-
-    fetchWatchlist();
-  }, [user, removedAnimeFromWatchlist]);
+  const { getToken } = useAuth();
 
   async function handleWatchlist() {
     if (!user) return toast.error("User not found. Please sign in.");
-    const url = `http://localhost:3000/users/${user.id}/watchlist`;
-
-    if (watchlist.includes(anime.id) || addedAnimeToWatchlist === anime.id) {
+    const url = `${apiBaseUrl}/api/users/${user.id}/watchlist`;
+    const token = await getToken();
+    if (
+      watchlistFromDB.includes(anime.id) ||
+      addedAnimeToWatchlist === anime.id
+    ) {
       // Removing anime from watchlist
       const errorMessage = "Failed to remove anime to watchlist.";
-
       try {
         const response = await fetch(url, {
           method: "DELETE",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          mode: "cors",
           body: JSON.stringify({ data: { animeId: anime.id } }),
         });
-
         if (!response.ok) return toast.error(errorMessage);
-
         setAddedAnimeToWatchlist(undefined);
-        setRemovedAnimeFromWatchlist(anime.id);
+        setRemovedAnimeToWatchlist(anime.id);
+        if (setAnimeList) {
+          setAnimeList((prev) => prev.filter((a) => a.id !== anime.id));
+        }
       } catch {
         toast.error(errorMessage);
       }
@@ -69,12 +73,16 @@ export default function AnimeCard({
       try {
         const response = await fetch(url, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            mode: "cors",
+            credentials: "include",
+          },
           body: JSON.stringify({ data: { animeId: anime.id } }),
         });
-
         if (!response.ok) return toast.error(errorMessage);
-
+        setRemovedAnimeToWatchlist(undefined);
         setAddedAnimeToWatchlist(anime.id);
       } catch {
         toast.error(errorMessage);
@@ -119,27 +127,38 @@ export default function AnimeCard({
           </div>
 
           <div className="flex gap-1">
+            {cardType === "watchlist" && (
+              <Select value={watchStatus} onValueChange={setWatchStatus}>
+                <SelectTrigger className="flex-grow cursor-pointer" size="sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="toWatch">To watch</SelectItem>
+                  <SelectItem value="watching">Watching</SelectItem>
+                  <SelectItem value="watched">Watched</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
             <Button
               size="sm"
-              variant="ghost"
-              className="cursor-pointer hover:text-red-400"
-            >
-              <Heart
-                fill={isFavorite ? "red" : "none"}
-                stroke={isFavorite ? "red" : "currentColor"}
-              />
-            </Button>
-
-            <Button
-              size="sm"
-              className="flex-grow cursor-pointer"
+              className={cn(
+                "cursor-pointer",
+                cardType === "search" && "flex-grow",
+              )}
+              variant={cardType === "watchlist" ? "destructive" : "default"}
               onClick={handleWatchlist}
             >
-              {watchlist.includes(anime.id) ||
+              {(watchlistFromDB.includes(anime.id) &&
+                removedAnimeToWatchlist !== anime.id) ||
               addedAnimeToWatchlist === anime.id ? (
                 <>
-                  <Bookmark className="fill-bg-dark" />{" "}
-                  <span>Remove from watchlist</span>
+                  {cardType === "watchlist" && <Trash />}
+                  {cardType === "search" && (
+                    <>
+                      <Bookmark className="fill-bg-dark" />{" "}
+                      <span>Remove from watchlist</span>
+                    </>
+                  )}
                 </>
               ) : (
                 <>
