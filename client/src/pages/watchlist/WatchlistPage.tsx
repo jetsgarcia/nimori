@@ -31,19 +31,20 @@ const GET_ANIME_BY_ID = gql`
 
 export default function WatchlistPage() {
   const [currentlyFetching, setCurrentlyFetching] = useState(false);
-  const [animeList, setAnimeList] = useState<Anime[]>([]);
+  const [animeWatchlist, setAnimeWatchlist] = useState<Anime[]>([]);
+  const [animeWatchingList, setAnimeWatchingList] = useState<Anime[]>([]);
+  const [animeWatchedList, setAnimeWatchedList] = useState<Anime[]>([]);
   const [getAnimeById, { loading, error }] = useLazyQuery(GET_ANIME_BY_ID);
   const [titleType, setTitleType] = useState<"romaji" | "english">("english");
-  const [watchlistFromDB] = useFetchWatchlist();
+  const [watchlistFromDB, watchingListFromDB, watchedListFromDB] =
+    useFetchWatchlist();
 
   useEffect(() => {
-    const fetchAnimeDetails = async () => {
-      setCurrentlyFetching(true);
+    setCurrentlyFetching(true);
+    const fetchWatchlistAnimeDetails = async () => {
       if (!watchlistFromDB.length) return;
 
-      setAnimeList([]);
-
-      const batchSize = 10;
+      const batchSize = 50;
       const animeData: Anime[] = [];
 
       for (let i = 0; i < watchlistFromDB.length; i += batchSize) {
@@ -64,12 +65,71 @@ export default function WatchlistPage() {
         );
       }
 
-      setAnimeList(animeData);
+      setAnimeWatchlist(animeData);
+    };
+
+    async function fetchWatchingAnimeDetails() {
+      if (!watchingListFromDB.length) return;
+
+      const batchSize = 50;
+      const animeData: Anime[] = [];
+
+      for (let i = 0; i < watchingListFromDB.length; i += batchSize) {
+        const batch = watchingListFromDB.slice(i, i + batchSize);
+
+        const batchPromises = batch.map((animeId) =>
+          getAnimeById({ variables: { id: animeId } })
+            .then(({ data }) => data?.Media as Anime)
+            .catch((error) => {
+              console.error(`Error fetching anime with id ${animeId}:`, error);
+              return null;
+            }),
+        );
+
+        const batchResults = await Promise.all(batchPromises);
+        animeData.push(
+          ...batchResults.filter((result): result is Anime => result !== null),
+        );
+      }
+
+      setAnimeWatchingList(animeData);
+    }
+
+    const fetchWatchedAnimeDetails = async () => {
+      if (!watchedListFromDB.length) {
+        setCurrentlyFetching(false);
+        return;
+      }
+
+      const batchSize = 50;
+      const animeData: Anime[] = [];
+
+      for (let i = 0; i < watchedListFromDB.length; i += batchSize) {
+        const batch = watchedListFromDB.slice(i, i + batchSize);
+
+        const batchPromises = batch.map((animeId) =>
+          getAnimeById({ variables: { id: animeId } })
+            .then(({ data }) => data?.Media as Anime)
+            .catch((error) => {
+              console.error(`Error fetching anime with id ${animeId}:`, error);
+              return null;
+            }),
+        );
+
+        const batchResults = await Promise.all(batchPromises);
+        animeData.push(
+          ...batchResults.filter((result): result is Anime => result !== null),
+        );
+      }
+
+      setAnimeWatchedList(animeData);
       setCurrentlyFetching(false);
     };
 
-    fetchAnimeDetails();
-  }, [watchlistFromDB, getAnimeById]);
+    fetchWatchlistAnimeDetails();
+    fetchWatchingAnimeDetails();
+    fetchWatchedAnimeDetails();
+  }, [getAnimeById, watchlistFromDB, watchingListFromDB, watchedListFromDB]);
 
   if (loading || currentlyFetching) {
     return (
@@ -89,7 +149,14 @@ export default function WatchlistPage() {
     );
   }
 
-  if (!animeList.length && !loading && !error && !currentlyFetching) {
+  if (
+    !animeWatchlist.length &&
+    !animeWatchingList.length &&
+    !animeWatchedList.length &&
+    !loading &&
+    !error &&
+    !currentlyFetching
+  ) {
     return (
       <div className="grid h-[40rem] w-full place-items-center md:h-[32rem] 2xl:h-[41rem]">
         Your watchlist is empty
@@ -117,13 +184,33 @@ export default function WatchlistPage() {
         </Button>
       </div>
       <div className="grid gap-6 pb-10 md:grid-cols-3 md:pb-4 lg:grid-cols-5">
-        {animeList?.map((anime: Anime) => (
+        {animeWatchlist?.map((anime: Anime) => (
           <div key={anime.id}>
             <AnimeCard
               anime={anime}
               titleType={titleType}
               cardType="watchlist"
-              setAnimeList={setAnimeList}
+              setAnimeList={setAnimeWatchlist}
+            />
+          </div>
+        ))}
+        {animeWatchingList?.map((anime: Anime) => (
+          <div key={anime.id}>
+            <AnimeCard
+              anime={anime}
+              titleType={titleType}
+              cardType="watchlist"
+              setAnimeList={setAnimeWatchingList}
+            />
+          </div>
+        ))}
+        {animeWatchedList?.map((anime: Anime) => (
+          <div key={anime.id}>
+            <AnimeCard
+              anime={anime}
+              titleType={titleType}
+              cardType="watchlist"
+              setAnimeList={setAnimeWatchedList}
             />
           </div>
         ))}

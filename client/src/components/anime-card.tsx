@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Bookmark, Trash } from "lucide-react";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -33,17 +33,104 @@ export default function AnimeCard({
   const [addedAnimeToWatchlist, setAddedAnimeToWatchlist] = useState<number>();
   const [removedAnimeToWatchlist, setRemovedAnimeToWatchlist] =
     useState<number>();
-  const [watchStatus, setWatchStatus] = useState("toWatch");
-  const [watchlistFromDB] = useFetchWatchlist();
+  const [watchlistFromDB, watchingListFromDB, watchedListFromDB] =
+    useFetchWatchlist();
   const [isDeleteConfirmationVisible, setIsDeleteConfirmationDialogVisible] =
     useState(false);
   const { user } = useUser();
   const { getToken } = useAuth();
+  const [watchStatus, setWatchStatus] = useState("toWatch");
+
+  useEffect(() => {
+    if (watchlistFromDB.includes(anime.id)) {
+      setWatchStatus("toWatch");
+    } else if (watchingListFromDB.includes(anime.id)) {
+      setWatchStatus("watching");
+    } else if (watchedListFromDB.includes(anime.id)) {
+      setWatchStatus("watched");
+    }
+  }, [anime.id, watchlistFromDB, watchingListFromDB, watchedListFromDB]);
+
+  // Create a separate function to handle status changes
+  const handleWatchStatusChange = async (newStatus: string) => {
+    if (!user) return toast.error("User not found. Please sign in.");
+    const errorMessage = "Failed to update anime status.";
+
+    try {
+      // Only make API call if status actually changed
+      if (newStatus === "toWatch") {
+        await addAnimeToWatchlist();
+      } else if (newStatus === "watching") {
+        await addAnimeToWatchingList();
+      } else if (newStatus === "watched") {
+        await addAnimeToWatchedList();
+      }
+
+      // Update local state after successful API call
+      setWatchStatus(newStatus);
+    } catch {
+      toast.error(errorMessage);
+    }
+  };
+
+  async function addAnimeToWatchlist() {
+    if (!user) return toast.error("User not found. Please sign in.");
+    const errorMessage = "Failed to remove anime to watchlist.";
+    const url = `${apiBaseUrl}/api/users/${user.id}/watchlist`;
+    const token = await getToken();
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      mode: "cors",
+      body: JSON.stringify({ data: { animeId: anime.id } }),
+    });
+    if (!response.ok) return toast.error(errorMessage);
+  }
+
+  async function addAnimeToWatchingList() {
+    if (!user) return toast.error("User not found. Please sign in.");
+    const errorMessage = "Failed to remove anime to watchlist.";
+    const url = `${apiBaseUrl}/api/users/${user.id}/watching`;
+    const token = await getToken();
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      mode: "cors",
+      body: JSON.stringify({ data: { animeId: anime.id } }),
+    });
+    if (!response.ok) return toast.error(errorMessage);
+  }
+
+  async function addAnimeToWatchedList() {
+    if (!user) return toast.error("User not found. Please sign in.");
+    const errorMessage = "Failed to remove anime to watchlist.";
+    const url = `${apiBaseUrl}/api/users/${user.id}/watched`;
+    const token = await getToken();
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      mode: "cors",
+      body: JSON.stringify({ data: { animeId: anime.id } }),
+    });
+    if (!response.ok) return toast.error(errorMessage);
+  }
 
   async function removeAnimeFromWatchlist() {
+    if (!user) return toast.error("User not found. Please sign in.");
     const errorMessage = "Failed to remove anime to watchlist.";
     try {
-      if (!user) return toast.error("User not found. Please sign in.");
       const url = `${apiBaseUrl}/api/users/${user.id}/watchlist`;
       const token = await getToken();
 
@@ -146,7 +233,10 @@ export default function AnimeCard({
 
             <div className="flex gap-1">
               {cardType === "watchlist" && (
-                <Select value={watchStatus} onValueChange={setWatchStatus}>
+                <Select
+                  value={watchStatus}
+                  onValueChange={handleWatchStatusChange}
+                >
                   <SelectTrigger className="flex-grow cursor-pointer" size="sm">
                     <SelectValue />
                   </SelectTrigger>
@@ -166,9 +256,11 @@ export default function AnimeCard({
                 variant={cardType === "watchlist" ? "destructive" : "default"}
                 onClick={handleWatchlist}
               >
-                {(watchlistFromDB.includes(anime.id) &&
-                  removedAnimeToWatchlist !== anime.id) ||
-                addedAnimeToWatchlist === anime.id ? (
+                {(watchlistFromDB.includes(anime.id) ||
+                  watchingListFromDB.includes(anime.id) ||
+                  watchedListFromDB.includes(anime.id) ||
+                  addedAnimeToWatchlist === anime.id) &&
+                removedAnimeToWatchlist !== anime.id ? (
                   <>
                     {cardType === "watchlist" && <Trash />}
                     {cardType === "search" && (
