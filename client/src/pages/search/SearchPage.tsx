@@ -43,6 +43,7 @@ const GET_POPULAR_ANIME = gql`
           extraLarge
         }
         episodes
+        format
         genres
         id
         startDate {
