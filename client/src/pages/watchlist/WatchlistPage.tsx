@@ -30,25 +30,33 @@ const GET_ANIME_BY_ID = gql`
 `;
 
 export default function WatchlistPage() {
-  const [currentlyFetching, setCurrentlyFetching] = useState(false);
+  // For loading state
+  const [currentlyFetchingWatchlist, setCurrentlyFetchingWatchlist] =
+    useState(true);
+  const [currentlyFetchingWatchingList, setCurrentlyFetchingWatchingList] =
+    useState(true);
+  const [currentlyFetchingWatchedList, setCurrentlyFetchingWatchedList] =
+    useState(true);
+
+  // For storing anime data
   const [animeWatchlist, setAnimeWatchlist] = useState<Anime[]>([]);
   const [animeWatchingList, setAnimeWatchingList] = useState<Anime[]>([]);
   const [animeWatchedList, setAnimeWatchedList] = useState<Anime[]>([]);
+
+  // AniList query
   const [getAnimeById, { loading, error }] = useLazyQuery(GET_ANIME_BY_ID);
+
   const [titleType, setTitleType] = useState<"romaji" | "english">("english");
   const [watchlistFromDB, watchingListFromDB, watchedListFromDB] =
     useFetchWatchlist();
 
   useEffect(() => {
-    setCurrentlyFetching(true);
-    const fetchWatchlistAnimeDetails = async () => {
-      if (!watchlistFromDB.length) return;
-
-      const batchSize = 50;
+    async function fetchAnimeDetails({ animeList }: { animeList: number[] }) {
+      const batchSize = 30;
       const animeData: Anime[] = [];
 
-      for (let i = 0; i < watchlistFromDB.length; i += batchSize) {
-        const batch = watchlistFromDB.slice(i, i + batchSize);
+      for (let i = 0; i < animeList.length; i += batchSize) {
+        const batch = animeList.slice(i, i + batchSize);
 
         const batchPromises = batch.map((animeId) =>
           getAnimeById({ variables: { id: animeId } })
@@ -65,73 +73,41 @@ export default function WatchlistPage() {
         );
       }
 
-      setAnimeWatchlist(animeData);
-    };
-
-    async function fetchWatchingAnimeDetails() {
-      if (!watchingListFromDB.length) return;
-
-      const batchSize = 50;
-      const animeData: Anime[] = [];
-
-      for (let i = 0; i < watchingListFromDB.length; i += batchSize) {
-        const batch = watchingListFromDB.slice(i, i + batchSize);
-
-        const batchPromises = batch.map((animeId) =>
-          getAnimeById({ variables: { id: animeId } })
-            .then(({ data }) => data?.Media as Anime)
-            .catch((error) => {
-              console.error(`Error fetching anime with id ${animeId}:`, error);
-              return null;
-            }),
-        );
-
-        const batchResults = await Promise.all(batchPromises);
-        animeData.push(
-          ...batchResults.filter((result): result is Anime => result !== null),
-        );
-      }
-
-      setAnimeWatchingList(animeData);
+      return animeData;
     }
 
-    const fetchWatchedAnimeDetails = async () => {
-      if (!watchedListFromDB.length) {
-        setCurrentlyFetching(false);
-        return;
-      }
-
-      const batchSize = 50;
-      const animeData: Anime[] = [];
-
-      for (let i = 0; i < watchedListFromDB.length; i += batchSize) {
-        const batch = watchedListFromDB.slice(i, i + batchSize);
-
-        const batchPromises = batch.map((animeId) =>
-          getAnimeById({ variables: { id: animeId } })
-            .then(({ data }) => data?.Media as Anime)
-            .catch((error) => {
-              console.error(`Error fetching anime with id ${animeId}:`, error);
-              return null;
-            }),
-        );
-
-        const batchResults = await Promise.all(batchPromises);
-        animeData.push(
-          ...batchResults.filter((result): result is Anime => result !== null),
-        );
-      }
-
-      setAnimeWatchedList(animeData);
-      setCurrentlyFetching(false);
-    };
-
-    fetchWatchlistAnimeDetails();
-    fetchWatchingAnimeDetails();
-    fetchWatchedAnimeDetails();
+    if (!watchlistFromDB.length) {
+      setCurrentlyFetchingWatchlist(false);
+    } else {
+      fetchAnimeDetails({ animeList: watchlistFromDB }).then((animeData) => {
+        setAnimeWatchlist(animeData);
+        setCurrentlyFetchingWatchlist(false);
+      });
+    }
+    if (!watchingListFromDB.length) {
+      setCurrentlyFetchingWatchingList(false);
+    } else {
+      fetchAnimeDetails({ animeList: watchingListFromDB }).then((animeData) => {
+        setAnimeWatchingList(animeData);
+        setCurrentlyFetchingWatchingList(false);
+      });
+    }
+    if (!watchedListFromDB.length) {
+      setCurrentlyFetchingWatchedList(false);
+    } else {
+      fetchAnimeDetails({ animeList: watchedListFromDB }).then((animeData) => {
+        setAnimeWatchedList(animeData);
+        setCurrentlyFetchingWatchedList(false);
+      });
+    }
   }, [getAnimeById, watchlistFromDB, watchingListFromDB, watchedListFromDB]);
 
-  if (loading || currentlyFetching) {
+  if (
+    loading ||
+    currentlyFetchingWatchlist ||
+    currentlyFetchingWatchingList ||
+    currentlyFetchingWatchedList
+  ) {
     return (
       <div className="grid h-[40rem] w-full place-items-center md:h-[32rem] 2xl:h-[41rem]">
         <Loading />
@@ -155,7 +131,9 @@ export default function WatchlistPage() {
     !animeWatchedList.length &&
     !loading &&
     !error &&
-    !currentlyFetching
+    !currentlyFetchingWatchlist &&
+    !currentlyFetchingWatchingList &&
+    !currentlyFetchingWatchedList
   ) {
     return (
       <div className="grid h-[40rem] w-full place-items-center md:h-[32rem] 2xl:h-[41rem]">
