@@ -5,9 +5,10 @@ import { toast } from "sonner";
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 export default function useFetchWatchlist() {
-  const [watchlist, setWatchlist] = useState<number[]>([]);
-  const [watchingList, setWatchingList] = useState<number[]>([]);
-  const [watchedList, setWatchedList] = useState<number[]>([]);
+  const [fetchFromDBLoading, setFetchFromDBLoading] = useState(true);
+  const [watchlistFromDB, setWatchlistFromDB] = useState<number[]>([]);
+  const [watchingListFromDB, setWatchingListFromDB] = useState<number[]>([]);
+  const [watchedListFromDB, setWatchedListFromDB] = useState<number[]>([]);
   const { getToken } = useAuth();
   const { user } = useUser();
 
@@ -29,9 +30,10 @@ export default function useFetchWatchlist() {
         if (!response.ok) throw new Error("Failed to fetch watchlist");
 
         const data = await response.json();
-        setWatchlist(data.watchlist);
-        setWatchingList(data.watching);
-        setWatchedList(data.watched);
+        setWatchlistFromDB(data.watchlist);
+        setWatchingListFromDB(data.watching);
+        setWatchedListFromDB(data.watched);
+        setFetchFromDBLoading(false);
       } catch (error) {
         console.error((error as Error).message);
         toast.error("Failed to fetch watchlist");
@@ -41,5 +43,10 @@ export default function useFetchWatchlist() {
     fetchWatchlist();
   }, [user, getToken]);
 
-  return [watchlist, watchingList, watchedList];
+  return {
+    watchlistFromDB,
+    watchingListFromDB,
+    watchedListFromDB,
+    fetchFromDBLoading,
+  };
 }

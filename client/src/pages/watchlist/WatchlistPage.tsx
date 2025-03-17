@@ -30,6 +30,14 @@ const GET_ANIME_BY_ID = gql`
 `;
 
 export default function WatchlistPage() {
+  const [titleType, setTitleType] = useState<"romaji" | "english">("english");
+  const {
+    watchlistFromDB,
+    watchingListFromDB,
+    watchedListFromDB,
+    fetchFromDBLoading,
+  } = useFetchWatchlist();
+
   // For loading state
   const [currentlyFetchingWatchlist, setCurrentlyFetchingWatchlist] =
     useState(true);
@@ -45,10 +53,6 @@ export default function WatchlistPage() {
 
   // AniList query
   const [getAnimeById, { loading, error }] = useLazyQuery(GET_ANIME_BY_ID);
-
-  const [titleType, setTitleType] = useState<"romaji" | "english">("english");
-  const [watchlistFromDB, watchingListFromDB, watchedListFromDB] =
-    useFetchWatchlist();
 
   useEffect(() => {
     async function fetchAnimeDetails({ animeList }: { animeList: number[] }) {
@@ -106,7 +110,8 @@ export default function WatchlistPage() {
     loading ||
     currentlyFetchingWatchlist ||
     currentlyFetchingWatchingList ||
-    currentlyFetchingWatchedList
+    currentlyFetchingWatchedList ||
+    fetchFromDBLoading
   ) {
     return (
       <div className="grid h-[40rem] w-full place-items-center md:h-[32rem] 2xl:h-[41rem]">
@@ -126,14 +131,15 @@ export default function WatchlistPage() {
   }
 
   if (
-    animeWatchlist.length <= 0 &&
-    animeWatchingList.length <= 0 &&
-    animeWatchedList.length <= 0 &&
+    watchlistFromDB.length <= 0 &&
+    watchingListFromDB.length <= 0 &&
+    watchedListFromDB.length <= 0 &&
     !loading &&
     !error &&
     !currentlyFetchingWatchlist &&
     !currentlyFetchingWatchingList &&
-    !currentlyFetchingWatchedList
+    !currentlyFetchingWatchedList &&
+    !fetchFromDBLoading
   ) {
     return (
       <div className="grid h-[40rem] w-full place-items-center md:h-[32rem] 2xl:h-[41rem]">

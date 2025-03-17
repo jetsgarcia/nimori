@@ -33,7 +33,7 @@ export default function AnimeCard({
   const [addedAnimeToWatchlist, setAddedAnimeToWatchlist] = useState<number>();
   const [removedAnimeToWatchlist, setRemovedAnimeToWatchlist] =
     useState<number>();
-  const [watchlistFromDB, watchingListFromDB, watchedListFromDB] =
+  const { watchlistFromDB, watchingListFromDB, watchedListFromDB } =
     useFetchWatchlist();
   const [isDeleteConfirmationVisible, setIsDeleteConfirmationDialogVisible] =
     useState(false);
