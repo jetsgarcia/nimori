@@ -8,8 +8,8 @@ import AnimeCard from "@/components/anime-card";
 import { Anime } from "@/types/anime";
 
 const GET_ANIME_LIST = gql`
-  query ($search: String) {
-    Page(perPage: 15) {
+  query ($search: String, $page: Int) {
+    Page(perPage: 15, page: $page) {
       media(search: $search, type: ANIME) {
         coverImage {
           extraLarge
@@ -27,13 +27,17 @@ const GET_ANIME_LIST = gql`
           english
         }
       }
+      pageInfo {
+        hasNextPage
+        total
+      }
     }
   }
 `;
 
 const GET_POPULAR_ANIME = gql`
-  query {
-    Page(perPage: 10) {
+  query ($page: Int) {
+    Page(perPage: 10, page: $page) {
       media(sort: POPULARITY_DESC, type: ANIME) {
         coverImage {
           extraLarge
@@ -50,6 +54,10 @@ const GET_POPULAR_ANIME = gql`
           english
         }
       }
+      pageInfo {
+        hasNextPage
+        total
+      }
     }
   }
 `;
@@ -57,32 +65,86 @@ const GET_POPULAR_ANIME = gql`
 export default function SearchPage() {
   const [titleType, setTitleType] = useState<"romaji" | "english">("english");
   const [searchTriggered, setSearchTriggered] = useState(false);
+  const [currentSearch, setCurrentSearch] = useState("");
 
+  // For show more feature
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showMoreLoading, setShowMoreLoading] = useState(false);
+
+  // For popular anime AniList query
   const {
     data: popularData,
     error: popularError,
     loading: popularLoading,
+    fetchMore: fetchMorePopular,
   } = useQuery<{
-    Page: { media: Anime[] };
-  }>(GET_POPULAR_ANIME);
+    Page: { media: Anime[]; pageInfo: { hasNextPage: boolean; total: number } };
+  }>(GET_POPULAR_ANIME, {
+    variables: { page: 1 },
+  });
 
+  // For search anime AniList query
   const [
     triggerSearch,
-    { data: searchData, error: searchError, loading: searchLoading },
+    { data: searchData, error: searchError, loading: searchLoading, fetchMore },
   ] = useLazyQuery<{
-    Page: { media: Anime[] };
+    Page: { media: Anime[]; pageInfo: { hasNextPage: boolean; total: number } };
   }>(GET_ANIME_LIST);
 
   const animeList = searchTriggered
     ? searchData?.Page?.media
     : popularData?.Page?.media;
 
+  const hasNextPage = searchTriggered
+    ? searchData?.Page?.pageInfo?.hasNextPage
+    : popularData?.Page?.pageInfo?.hasNextPage;
+
+  const handleShowMore = () => {
+    setShowMoreLoading(true);
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+
+    if (searchTriggered) {
+      fetchMore({
+        variables: { search: currentSearch, page: nextPage },
+        updateQuery: (prev, { fetchMoreResult }) => {
+          if (!fetchMoreResult) return prev;
+          return {
+            Page: {
+              ...fetchMoreResult.Page,
+              media: [...prev.Page.media, ...fetchMoreResult.Page.media],
+            },
+          };
+        },
+      }).finally(() => {
+        setShowMoreLoading(false);
+      });
+    } else {
+      fetchMorePopular({
+        variables: { page: nextPage },
+        updateQuery: (prev, { fetchMoreResult }) => {
+          if (!fetchMoreResult) return prev;
+          return {
+            Page: {
+              ...fetchMoreResult.Page,
+              media: [...prev.Page.media, ...fetchMoreResult.Page.media],
+            },
+          };
+        },
+      }).finally(() => {
+        setShowMoreLoading(false);
+      });
+    }
+  };
+
   return (
     <div className="w-full pt-6 pb-6">
       <SearchInput
         triggerSearch={(search) => {
           setSearchTriggered(true);
-          triggerSearch({ variables: { search } });
+          setCurrentPage(1);
+          setCurrentSearch(search);
+          triggerSearch({ variables: { search, page: 1 } });
         }}
       />
 
@@ -144,6 +206,23 @@ export default function SearchPage() {
                 </div>
               ))}
             </div>
+
+            {hasNextPage && (
+              <div className="mt-8 flex h-20 items-center justify-center">
+                {searchLoading || popularLoading || showMoreLoading ? (
+                  <Loading />
+                ) : (
+                  <Button
+                    onClick={handleShowMore}
+                    variant="outline"
+                    disabled={searchLoading || popularLoading}
+                    className="cursor-pointer px-6"
+                  >
+                    Show more
+                  </Button>
+                )}
+              </div>
+            )}
           </>
         )}
     </div>
