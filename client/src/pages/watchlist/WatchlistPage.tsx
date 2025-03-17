@@ -126,9 +126,9 @@ export default function WatchlistPage() {
   }
 
   if (
-    !animeWatchlist.length &&
-    !animeWatchingList.length &&
-    !animeWatchedList.length &&
+    animeWatchlist.length <= 0 &&
+    animeWatchingList.length <= 0 &&
+    animeWatchedList.length <= 0 &&
     !loading &&
     !error &&
     !currentlyFetchingWatchlist &&
