@@ -33,8 +33,7 @@ export default function HeroTextSection() {
             transition={{ ...fadeInDown.transition, delay: 0.7 }}
             className="m-auto mb-4 max-w-[35ch] text-gray-700 md:mb-6 md:max-w-none dark:text-gray-300"
           >
-            Track what you watch, keep tabs on your waifus, discover trending
-            anime, and organize your favorites effortlessly!
+            Track what you watch effortlessly!
           </motion.p>
           <motion.div
             {...fadeInDown}

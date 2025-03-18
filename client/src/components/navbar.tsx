@@ -3,7 +3,6 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { SignedIn, UserButton } from "@clerk/clerk-react";
 
 const navLinks = [
-  { url: "/home", label: "Home" },
   { url: "/watchlist", label: "Watchlist" },
   { url: "/search", label: "Search" },
 ];
