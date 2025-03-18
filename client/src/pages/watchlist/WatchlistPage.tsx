@@ -11,23 +11,25 @@ import { useAuth, useUser } from "@clerk/clerk-react";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
-const GET_ANIME_BY_ID = gql`
-  query ($id: Int) {
-    Media(id: $id, type: ANIME) {
-      coverImage {
-        extraLarge
-      }
-      episodes
-      format
-      genres
-      id
-      startDate {
-        year
-      }
-      status
-      title {
-        romaji
-        english
+const GET_ANIME_BY_IDS = gql`
+  query ($ids: [Int!]!) {
+    Page {
+      media(id_in: $ids, type: ANIME) {
+        coverImage {
+          extraLarge
+        }
+        episodes
+        format
+        genres
+        id
+        startDate {
+          year
+        }
+        status
+        title {
+          romaji
+          english
+        }
       }
     }
   }
@@ -62,8 +64,12 @@ export default function WatchlistPage() {
   const [animeWatchingList, setAnimeWatchingList] = useState<Anime[]>([]);
   const [animeWatchedList, setAnimeWatchedList] = useState<Anime[]>([]);
 
+  const [watchlistItems, setWatchlistItems] = useState(0);
+  const [watchingListItems, setWatchingListItems] = useState(0);
+  const [watchedListItems, setWatchedListItems] = useState(0);
+
   // AniList query
-  const [getAnimeById, { loading, error }] = useLazyQuery(GET_ANIME_BY_ID);
+  const [getAnimeByIds, { loading, error }] = useLazyQuery(GET_ANIME_BY_IDS);
 
   async function handleWatchStatusChange(
     newStatus: "toWatch" | "watching" | "watched",
@@ -162,27 +168,21 @@ export default function WatchlistPage() {
     if (!response.ok) return toast.error(errorMessage);
   }
 
+  // For initial fetching of first five anime details in each watch status
   useEffect(() => {
     async function fetchAnimeDetails({ animeList }: { animeList: number[] }) {
-      const batchSize = 30;
+      const batchSize = 5;
       const animeData: Anime[] = [];
 
       for (let i = 0; i < animeList.length; i += batchSize) {
         const batch = animeList.slice(i, i + batchSize);
 
-        const batchPromises = batch.map((animeId) =>
-          getAnimeById({ variables: { id: animeId } })
-            .then(({ data }) => data?.Media as Anime)
-            .catch((error) => {
-              console.error(`Error fetching anime with id ${animeId}:`, error);
-              return null;
-            }),
-        );
-
-        const batchResults = await Promise.all(batchPromises);
-        animeData.push(
-          ...batchResults.filter((result): result is Anime => result !== null),
-        );
+        try {
+          const { data } = await getAnimeByIds({ variables: { ids: batch } });
+          animeData.push(...(data?.Page?.media || []));
+        } catch (error) {
+          console.error("Error fetching anime:", error);
+        }
       }
 
       return animeData;
@@ -191,28 +191,161 @@ export default function WatchlistPage() {
     if (!watchlistFromDB.length) {
       setCurrentlyFetchingWatchlist(false);
     } else {
-      fetchAnimeDetails({ animeList: watchlistFromDB }).then((animeData) => {
+      const animeToFetch = watchlistFromDB.slice(
+        watchlistItems,
+        watchlistItems + 5,
+      );
+      fetchAnimeDetails({ animeList: animeToFetch }).then((animeData) => {
         setAnimeWatchlist(animeData);
         setCurrentlyFetchingWatchlist(false);
       });
     }
+  }, [watchlistFromDB]);
+  useEffect(() => {
+    async function fetchAnimeDetails({ animeList }: { animeList: number[] }) {
+      const batchSize = 5;
+      const animeData: Anime[] = [];
+
+      for (let i = 0; i < animeList.length; i += batchSize) {
+        const batch = animeList.slice(i, i + batchSize);
+
+        try {
+          const { data } = await getAnimeByIds({ variables: { ids: batch } });
+          animeData.push(...(data?.Page?.media || []));
+        } catch (error) {
+          console.error("Error fetching anime:", error);
+        }
+      }
+
+      return animeData;
+    }
+
     if (!watchingListFromDB.length) {
       setCurrentlyFetchingWatchingList(false);
     } else {
-      fetchAnimeDetails({ animeList: watchingListFromDB }).then((animeData) => {
+      const animeToFetch = watchingListFromDB.slice(
+        watchingListItems,
+        watchingListItems + 5,
+      );
+      fetchAnimeDetails({ animeList: animeToFetch }).then((animeData) => {
         setAnimeWatchingList(animeData);
         setCurrentlyFetchingWatchingList(false);
       });
     }
+  }, [watchingListFromDB]);
+  useEffect(() => {
+    async function fetchAnimeDetails({ animeList }: { animeList: number[] }) {
+      const batchSize = 5;
+      const animeData: Anime[] = [];
+
+      for (let i = 0; i < animeList.length; i += batchSize) {
+        const batch = animeList.slice(i, i + batchSize);
+
+        try {
+          const { data } = await getAnimeByIds({ variables: { ids: batch } });
+          animeData.push(...(data?.Page?.media || []));
+        } catch (error) {
+          console.error("Error fetching anime:", error);
+        }
+      }
+
+      return animeData;
+    }
+
     if (!watchedListFromDB.length) {
       setCurrentlyFetchingWatchedList(false);
     } else {
-      fetchAnimeDetails({ animeList: watchedListFromDB }).then((animeData) => {
+      const animeToFetch = watchedListFromDB.slice(
+        watchedListItems,
+        watchedListItems + 5,
+      );
+      fetchAnimeDetails({ animeList: animeToFetch }).then((animeData) => {
         setAnimeWatchedList(animeData);
         setCurrentlyFetchingWatchedList(false);
       });
     }
-  }, [getAnimeById, watchlistFromDB, watchingListFromDB, watchedListFromDB]);
+  }, [watchedListFromDB]);
+
+  // useEffect(() => {
+  //   async function fetchAnimeDetails({ animeList }: { animeList: number[] }) {
+  //     const batchSize = 5;
+  //     const animeData: Anime[] = [];
+
+  //     for (let i = 0; i < animeList.length; i += batchSize) {
+  //       const batch = animeList.slice(i, i + batchSize);
+
+  //       const batchPromises = batch.map((animeId) =>
+  //         getAnimeById({ variables: { id: animeId } })
+  //           .then(({ data }) => data?.Media as Anime)
+  //           .catch((error) => {
+  //             console.error(`Error fetching anime with id ${animeId}:`, error);
+  //             return null;
+  //           }),
+  //       );
+
+  //       const batchResults = await Promise.all(batchPromises);
+  //       animeData.push(
+  //         ...batchResults.filter((result): result is Anime => result !== null),
+  //       );
+  //     }
+
+  //     return animeData;
+  //   }
+
+  //   if (watchlistItems >= 10) {
+  //     console.log("I ran");
+  //     const animeToFetch = watchlistFromDB.slice(
+  //       watchlistItems,
+  //       watchlistItems + 5,
+  //     );
+  //     fetchAnimeDetails({ animeList: animeToFetch }).then((animeData) => {
+  //       setAnimeWatchlist((prev) => [...prev, ...animeData]);
+  //       setCurrentlyFetchingWatchlist(false);
+  //     });
+  //   }
+  // }, [watchlistItems]);
+
+  useEffect(() => {
+    async function fetchAnimeDetails({ animeList }: { animeList: number[] }) {
+      const batchSize = 5;
+      const animeData: Anime[] = [];
+
+      for (let i = 0; i < animeList.length; i += batchSize) {
+        const batch = animeList.slice(i, i + batchSize);
+
+        try {
+          const { data } = await getAnimeByIds({ variables: { ids: batch } });
+          animeData.push(...(data?.Page?.media || []));
+        } catch (error) {
+          console.error("Error fetching anime:", error);
+        }
+      }
+
+      return animeData;
+    }
+
+    if (watchlistItems >= 5) {
+      const animeToFetch = watchlistFromDB.slice(
+        watchlistItems,
+        watchlistItems + 5,
+      );
+
+      // Avoid duplicate fetching
+      const alreadyFetchedIds = new Set(
+        animeWatchlist.map((anime) => anime.id),
+      );
+      const newAnimeToFetch = animeToFetch.filter(
+        (id) => !alreadyFetchedIds.has(id),
+      );
+
+      if (newAnimeToFetch.length > 0) {
+        fetchAnimeDetails({ animeList: newAnimeToFetch }).then((animeData) => {
+          setAnimeWatchlist((prev) => [...prev, ...animeData]);
+          setCurrentlyFetchingWatchlist(false);
+        });
+      }
+    }
+  }, [watchlistItems]);
 
   if (
     loading ||
@@ -310,7 +443,7 @@ export default function WatchlistPage() {
           </div>
         </div>
       </div>
-      <div className="grid gap-6 pb-10 md:grid-cols-3 md:pb-4 lg:grid-cols-5">
+      <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-5">
         {viewWatchlist && (
           <>
             {animeWatchlist?.map((anime: Anime) => (
@@ -366,6 +499,24 @@ export default function WatchlistPage() {
             ))}
           </>
         )}
+      </div>
+      <div className="flex h-20 items-center justify-center">
+        <Button
+          className="cursor-pointer px-6"
+          onClick={() => {
+            if (watchlistFromDB.length + 1 >= watchlistItems) {
+              setWatchlistItems(watchlistItems + 5);
+            }
+            if (watchingListFromDB.length + 1 >= watchingListItems) {
+              setWatchingListItems(watchingListItems + 5);
+            }
+            if (watchedListFromDB.length + 1 >= watchedListItems) {
+              setWatchedListItems(watchedListItems + 5);
+            }
+          }}
+        >
+          Load more
+        </Button>
       </div>
     </>
   );
