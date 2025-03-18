@@ -37,8 +37,6 @@ const GET_ANIME_BY_IDS = gql`
 
 export default function WatchlistPage() {
   const [titleType, setTitleType] = useState<"romaji" | "english">("english");
-  const { getToken } = useAuth();
-  const { user } = useUser();
   const {
     watchlistFromDB,
     watchingListFromDB,
@@ -47,6 +45,10 @@ export default function WatchlistPage() {
     refetchWatchlist,
   } = useFetchWatchlist();
 
+  // Retrieve information from clerk auth
+  const { getToken } = useAuth();
+  const { user } = useUser();
+
   // For loading state
   const [currentlyFetchingWatchlist, setCurrentlyFetchingWatchlist] =
     useState(true);
@@ -54,7 +56,9 @@ export default function WatchlistPage() {
     useState(true);
   const [currentlyFetchingWatchedList, setCurrentlyFetchingWatchedList] =
     useState(true);
+  const [loadMore, setLoadMore] = useState(false);
 
+  // For toggling watch status view
   const [viewWatchlist, setViewWatchlist] = useState(true);
   const [viewWatchingList, setViewWatchingList] = useState(true);
   const [viewWatchedList, setViewWatchedList] = useState(true);
@@ -64,12 +68,31 @@ export default function WatchlistPage() {
   const [animeWatchingList, setAnimeWatchingList] = useState<Anime[]>([]);
   const [animeWatchedList, setAnimeWatchedList] = useState<Anime[]>([]);
 
+  // For lazy loading (Pagination)
   const [watchlistItems, setWatchlistItems] = useState(0);
   const [watchingListItems, setWatchingListItems] = useState(0);
   const [watchedListItems, setWatchedListItems] = useState(0);
 
   // AniList query
   const [getAnimeByIds, { loading, error }] = useLazyQuery(GET_ANIME_BY_IDS);
+
+  async function addAnimeToAList(animeId: number, list: string) {
+    if (!user) return toast.error("User not found. Please sign in.");
+    const errorMessage = "Failed to remove anime to watchlist.";
+    const url = `${apiBaseUrl}/api/users/${user.id}/${list}`;
+    const token = await getToken();
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      mode: "cors",
+      body: JSON.stringify({ data: { animeId } }),
+    });
+    if (!response.ok) return toast.error(errorMessage);
+  }
 
   async function handleWatchStatusChange(
     newStatus: "toWatch" | "watching" | "watched",
@@ -85,11 +108,11 @@ export default function WatchlistPage() {
 
       // Make API call based on the new status
       if (newStatus === "toWatch") {
-        await addAnimeToWatchlist(animeId);
+        await addAnimeToAList(animeId, "watchlist");
       } else if (newStatus === "watching") {
-        await addAnimeToWatchingList(animeId);
+        await addAnimeToAList(animeId, "watching");
       } else if (newStatus === "watched") {
-        await addAnimeToWatchedList(animeId);
+        await addAnimeToAList(animeId, "watched");
       }
 
       // Update local state - remove from current list and refetch to refresh lists
@@ -114,80 +137,26 @@ export default function WatchlistPage() {
     }
   }
 
-  async function addAnimeToWatchlist(animeId: number) {
-    if (!user) return toast.error("User not found. Please sign in.");
-    const errorMessage = "Failed to remove anime to watchlist.";
-    const url = `${apiBaseUrl}/api/users/${user.id}/watchlist`;
-    const token = await getToken();
+  async function fetchAnimeDetails({ animeList }: { animeList: number[] }) {
+    const batchSize = 5;
+    const animeData: Anime[] = [];
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      mode: "cors",
-      body: JSON.stringify({ data: { animeId } }),
-    });
-    if (!response.ok) return toast.error(errorMessage);
-  }
+    for (let i = 0; i < animeList.length; i += batchSize) {
+      const batch = animeList.slice(i, i + batchSize);
 
-  async function addAnimeToWatchingList(animeId: number) {
-    if (!user) return toast.error("User not found. Please sign in.");
-    const errorMessage = "Failed to remove anime to watchlist.";
-    const url = `${apiBaseUrl}/api/users/${user.id}/watching`;
-    const token = await getToken();
+      try {
+        const { data } = await getAnimeByIds({ variables: { ids: batch } });
+        animeData.push(...(data?.Page?.media || []));
+      } catch (error) {
+        console.error("Error fetching anime:", error);
+      }
+    }
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      mode: "cors",
-      body: JSON.stringify({ data: { animeId } }),
-    });
-    if (!response.ok) return toast.error(errorMessage);
-  }
-
-  async function addAnimeToWatchedList(animeId: number) {
-    if (!user) return toast.error("User not found. Please sign in.");
-    const errorMessage = "Failed to remove anime to watchlist.";
-    const url = `${apiBaseUrl}/api/users/${user.id}/watched`;
-    const token = await getToken();
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      mode: "cors",
-      body: JSON.stringify({ data: { animeId } }),
-    });
-    if (!response.ok) return toast.error(errorMessage);
+    return animeData;
   }
 
   // For initial fetching of first five anime details in each watch status
   useEffect(() => {
-    async function fetchAnimeDetails({ animeList }: { animeList: number[] }) {
-      const batchSize = 5;
-      const animeData: Anime[] = [];
-
-      for (let i = 0; i < animeList.length; i += batchSize) {
-        const batch = animeList.slice(i, i + batchSize);
-
-        try {
-          const { data } = await getAnimeByIds({ variables: { ids: batch } });
-          animeData.push(...(data?.Page?.media || []));
-        } catch (error) {
-          console.error("Error fetching anime:", error);
-        }
-      }
-
-      return animeData;
-    }
-
     if (!watchlistFromDB.length) {
       setCurrentlyFetchingWatchlist(false);
     } else {
@@ -202,24 +171,6 @@ export default function WatchlistPage() {
     }
   }, [watchlistFromDB]);
   useEffect(() => {
-    async function fetchAnimeDetails({ animeList }: { animeList: number[] }) {
-      const batchSize = 5;
-      const animeData: Anime[] = [];
-
-      for (let i = 0; i < animeList.length; i += batchSize) {
-        const batch = animeList.slice(i, i + batchSize);
-
-        try {
-          const { data } = await getAnimeByIds({ variables: { ids: batch } });
-          animeData.push(...(data?.Page?.media || []));
-        } catch (error) {
-          console.error("Error fetching anime:", error);
-        }
-      }
-
-      return animeData;
-    }
-
     if (!watchingListFromDB.length) {
       setCurrentlyFetchingWatchingList(false);
     } else {
@@ -234,24 +185,6 @@ export default function WatchlistPage() {
     }
   }, [watchingListFromDB]);
   useEffect(() => {
-    async function fetchAnimeDetails({ animeList }: { animeList: number[] }) {
-      const batchSize = 5;
-      const animeData: Anime[] = [];
-
-      for (let i = 0; i < animeList.length; i += batchSize) {
-        const batch = animeList.slice(i, i + batchSize);
-
-        try {
-          const { data } = await getAnimeByIds({ variables: { ids: batch } });
-          animeData.push(...(data?.Page?.media || []));
-        } catch (error) {
-          console.error("Error fetching anime:", error);
-        }
-      }
-
-      return animeData;
-    }
-
     if (!watchedListFromDB.length) {
       setCurrentlyFetchingWatchedList(false);
     } else {
@@ -262,68 +195,13 @@ export default function WatchlistPage() {
       fetchAnimeDetails({ animeList: animeToFetch }).then((animeData) => {
         setAnimeWatchedList(animeData);
         setCurrentlyFetchingWatchedList(false);
+        setLoadMore(false);
       });
     }
   }, [watchedListFromDB]);
 
-  // useEffect(() => {
-  //   async function fetchAnimeDetails({ animeList }: { animeList: number[] }) {
-  //     const batchSize = 5;
-  //     const animeData: Anime[] = [];
-
-  //     for (let i = 0; i < animeList.length; i += batchSize) {
-  //       const batch = animeList.slice(i, i + batchSize);
-
-  //       const batchPromises = batch.map((animeId) =>
-  //         getAnimeById({ variables: { id: animeId } })
-  //           .then(({ data }) => data?.Media as Anime)
-  //           .catch((error) => {
-  //             console.error(`Error fetching anime with id ${animeId}:`, error);
-  //             return null;
-  //           }),
-  //       );
-
-  //       const batchResults = await Promise.all(batchPromises);
-  //       animeData.push(
-  //         ...batchResults.filter((result): result is Anime => result !== null),
-  //       );
-  //     }
-
-  //     return animeData;
-  //   }
-
-  //   if (watchlistItems >= 10) {
-  //     console.log("I ran");
-  //     const animeToFetch = watchlistFromDB.slice(
-  //       watchlistItems,
-  //       watchlistItems + 5,
-  //     );
-  //     fetchAnimeDetails({ animeList: animeToFetch }).then((animeData) => {
-  //       setAnimeWatchlist((prev) => [...prev, ...animeData]);
-  //       setCurrentlyFetchingWatchlist(false);
-  //     });
-  //   }
-  // }, [watchlistItems]);
-
+  // For lazy loading (+5 anime per watch status)
   useEffect(() => {
-    async function fetchAnimeDetails({ animeList }: { animeList: number[] }) {
-      const batchSize = 5;
-      const animeData: Anime[] = [];
-
-      for (let i = 0; i < animeList.length; i += batchSize) {
-        const batch = animeList.slice(i, i + batchSize);
-
-        try {
-          const { data } = await getAnimeByIds({ variables: { ids: batch } });
-          animeData.push(...(data?.Page?.media || []));
-        } catch (error) {
-          console.error("Error fetching anime:", error);
-        }
-      }
-
-      return animeData;
-    }
-
     if (watchlistItems >= 5) {
       const animeToFetch = watchlistFromDB.slice(
         watchlistItems,
@@ -342,16 +220,63 @@ export default function WatchlistPage() {
         fetchAnimeDetails({ animeList: newAnimeToFetch }).then((animeData) => {
           setAnimeWatchlist((prev) => [...prev, ...animeData]);
           setCurrentlyFetchingWatchlist(false);
+          setLoadMore(false);
         });
       }
     }
   }, [watchlistItems]);
+  useEffect(() => {
+    if (watchingListItems >= 5) {
+      const animeToFetch = watchingListFromDB.slice(
+        watchingListItems,
+        watchingListItems + 5,
+      );
+
+      // Avoid duplicate fetching
+      const alreadyFetchedIds = new Set(
+        animeWatchlist.map((anime) => anime.id),
+      );
+      const newAnimeToFetch = animeToFetch.filter(
+        (id) => !alreadyFetchedIds.has(id),
+      );
+
+      if (newAnimeToFetch.length > 0) {
+        fetchAnimeDetails({ animeList: newAnimeToFetch }).then((animeData) => {
+          setAnimeWatchingList((prev) => [...prev, ...animeData]);
+          setCurrentlyFetchingWatchingList(false);
+          setLoadMore(false);
+        });
+      }
+    }
+  }, [watchingListItems]);
+  useEffect(() => {
+    if (watchedListItems >= 5) {
+      const animeToFetch = watchingListFromDB.slice(
+        watchedListItems,
+        watchedListItems + 5,
+      );
+
+      // Avoid duplicate fetching
+      const alreadyFetchedIds = new Set(
+        animeWatchlist.map((anime) => anime.id),
+      );
+      const newAnimeToFetch = animeToFetch.filter(
+        (id) => !alreadyFetchedIds.has(id),
+      );
+
+      if (newAnimeToFetch.length > 0) {
+        fetchAnimeDetails({ animeList: newAnimeToFetch }).then((animeData) => {
+          setAnimeWatchedList((prev) => [...prev, ...animeData]);
+          setCurrentlyFetchingWatchedList(false);
+        });
+      }
+    }
+  }, [watchedListItems]);
 
   if (
-    loading ||
-    currentlyFetchingWatchlist ||
-    currentlyFetchingWatchingList ||
-    currentlyFetchingWatchedList ||
+    (loading && currentlyFetchingWatchlist && !loadMore) ||
+    (currentlyFetchingWatchingList && !loadMore) ||
+    (currentlyFetchingWatchedList && !loadMore) ||
     fetchFromDBLoading
   ) {
     return (
@@ -500,23 +425,46 @@ export default function WatchlistPage() {
           </>
         )}
       </div>
-      <div className="flex h-20 items-center justify-center">
-        <Button
-          className="cursor-pointer px-6"
-          onClick={() => {
-            if (watchlistFromDB.length + 1 >= watchlistItems) {
-              setWatchlistItems(watchlistItems + 5);
-            }
-            if (watchingListFromDB.length + 1 >= watchingListItems) {
-              setWatchingListItems(watchingListItems + 5);
-            }
-            if (watchedListFromDB.length + 1 >= watchedListItems) {
-              setWatchedListItems(watchedListItems + 5);
-            }
-          }}
-        >
-          Load more
-        </Button>
+      <div className="flex h-20 items-center justify-center gap-2">
+        {loadMore ? (
+          <Loading />
+        ) : (
+          <>
+            {watchlistFromDB.length > watchlistItems + 5 && (
+              <Button
+                className="cursor-pointer"
+                onClick={() => {
+                  setLoadMore(true);
+                  setWatchlistItems(watchlistItems + 5);
+                }}
+              >
+                Load more "To Watch"
+              </Button>
+            )}
+            {watchingListFromDB.length > watchingListItems + 5 && (
+              <Button
+                className="cursor-pointer"
+                onClick={() => {
+                  setLoadMore(true);
+                  setWatchingListItems(watchingListItems + 5);
+                }}
+              >
+                Load more "Watching"
+              </Button>
+            )}
+            {watchedListFromDB.length > watchedListItems + 5 && (
+              <Button
+                className="cursor-pointer"
+                onClick={() => {
+                  setLoadMore(true);
+                  setWatchedListItems(watchedListItems + 5);
+                }}
+              >
+                Load more "Watched"
+              </Button>
+            )}
+          </>
+        )}
       </div>
     </>
   );
