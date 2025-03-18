@@ -9,7 +9,7 @@ export default function LandingPage() {
   const navigate = useNavigate();
 
   if (isLoaded) {
-    if (isSignedIn) navigate("/home");
+    if (isSignedIn) navigate("/watchlist");
     return (
       <div className="bg-bg-light dark:bg-bg-dark flex h-screen justify-between overflow-hidden">
         <LandingTextSection />

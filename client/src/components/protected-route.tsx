@@ -14,7 +14,7 @@ export const ProtectedRoute = () => {
   }
 
   if (!isSignedIn) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/watchlist" replace />;
   }
 
   return <Outlet />;
