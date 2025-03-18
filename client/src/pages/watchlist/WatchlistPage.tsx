@@ -76,6 +76,7 @@ export default function WatchlistPage() {
   // AniList query
   const [getAnimeByIds, { loading, error }] = useLazyQuery(GET_ANIME_BY_IDS);
 
+  // For API call which is used in handleWatchStatusChange
   async function addAnimeToAList(animeId: number, list: string) {
     if (!user) return toast.error("User not found. Please sign in.");
     const errorMessage = "Failed to remove anime to watchlist.";
@@ -138,7 +139,7 @@ export default function WatchlistPage() {
   }
 
   async function fetchAnimeDetails({ animeList }: { animeList: number[] }) {
-    const batchSize = 5;
+    const batchSize = 100;
     const animeData: Anime[] = [];
 
     for (let i = 0; i < animeList.length; i += batchSize) {
@@ -162,7 +163,7 @@ export default function WatchlistPage() {
     } else {
       const animeToFetch = watchlistFromDB.slice(
         watchlistItems,
-        watchlistItems + 5,
+        watchlistItems + 100,
       );
       fetchAnimeDetails({ animeList: animeToFetch }).then((animeData) => {
         setAnimeWatchlist(animeData);
@@ -176,7 +177,7 @@ export default function WatchlistPage() {
     } else {
       const animeToFetch = watchingListFromDB.slice(
         watchingListItems,
-        watchingListItems + 5,
+        watchingListItems + 100,
       );
       fetchAnimeDetails({ animeList: animeToFetch }).then((animeData) => {
         setAnimeWatchingList(animeData);
@@ -190,7 +191,7 @@ export default function WatchlistPage() {
     } else {
       const animeToFetch = watchedListFromDB.slice(
         watchedListItems,
-        watchedListItems + 5,
+        watchedListItems + 100,
       );
       fetchAnimeDetails({ animeList: animeToFetch }).then((animeData) => {
         setAnimeWatchedList(animeData);
@@ -200,12 +201,12 @@ export default function WatchlistPage() {
     }
   }, [watchedListFromDB]);
 
-  // For lazy loading (+5 anime per watch status)
+  // For lazy loading (+100 anime per watch status)
   useEffect(() => {
-    if (watchlistItems >= 5) {
+    if (watchlistItems >= 100) {
       const animeToFetch = watchlistFromDB.slice(
         watchlistItems,
-        watchlistItems + 5,
+        watchlistItems + 100,
       );
 
       // Avoid duplicate fetching
@@ -226,10 +227,10 @@ export default function WatchlistPage() {
     }
   }, [watchlistItems]);
   useEffect(() => {
-    if (watchingListItems >= 5) {
+    if (watchingListItems >= 100) {
       const animeToFetch = watchingListFromDB.slice(
         watchingListItems,
-        watchingListItems + 5,
+        watchingListItems + 100,
       );
 
       // Avoid duplicate fetching
@@ -250,10 +251,10 @@ export default function WatchlistPage() {
     }
   }, [watchingListItems]);
   useEffect(() => {
-    if (watchedListItems >= 5) {
+    if (watchedListItems >= 100) {
       const animeToFetch = watchingListFromDB.slice(
         watchedListItems,
-        watchedListItems + 5,
+        watchedListItems + 100,
       );
 
       // Avoid duplicate fetching
@@ -430,34 +431,34 @@ export default function WatchlistPage() {
           <Loading />
         ) : (
           <>
-            {watchlistFromDB.length > watchlistItems + 5 && (
+            {watchlistFromDB.length > watchlistItems + 100 && (
               <Button
                 className="cursor-pointer"
                 onClick={() => {
                   setLoadMore(true);
-                  setWatchlistItems(watchlistItems + 5);
+                  setWatchlistItems(watchlistItems + 100);
                 }}
               >
                 Load more "To Watch"
               </Button>
             )}
-            {watchingListFromDB.length > watchingListItems + 5 && (
+            {watchingListFromDB.length > watchingListItems + 100 && (
               <Button
                 className="cursor-pointer"
                 onClick={() => {
                   setLoadMore(true);
-                  setWatchingListItems(watchingListItems + 5);
+                  setWatchingListItems(watchingListItems + 100);
                 }}
               >
                 Load more "Watching"
               </Button>
             )}
-            {watchedListFromDB.length > watchedListItems + 5 && (
+            {watchedListFromDB.length > watchedListItems + 100 && (
               <Button
                 className="cursor-pointer"
                 onClick={() => {
                   setLoadMore(true);
-                  setWatchedListItems(watchedListItems + 5);
+                  setWatchedListItems(watchedListItems + 100);
                 }}
               >
                 Load more "Watched"
